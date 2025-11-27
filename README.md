@@ -2,8 +2,7 @@
 
 A high-performance, single-pass, zero-allocation HTML opening tag parser for .NET 8+
 
-[![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![NuGet](https://img.shields.io/nuget/v/HtmlTag.svg)](https://www.nuget.org/packages/HtmlTag)
 
 ## Overview
 

@@ -19,6 +19,7 @@
     <PackageReleaseNotes />
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Description>A high-performance, single-pass, zero-allocation HTML opening tag parser for .NET 8+</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
