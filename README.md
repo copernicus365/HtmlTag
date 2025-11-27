@@ -244,13 +244,6 @@ Equal("600", tag.Attributes["height"]);
 - **SIMD-optimized** `IndexOf` operations via `ReadOnlySpan<char>`
 - **Fast-path validation** for common ASCII tag/attribute names
 
-### Typical Performance
-
-Parsing 1000 typical HTML tags (3-5 attributes each):
-- **Time**: ~100-200 microseconds
-- **Allocations**: ~50-100 KB total
-- **GC pressure**: Minimal
-
 ## Edge Cases and Behavior
 
 ### Duplicate Attributes
