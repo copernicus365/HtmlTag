@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="HtmlTag/HtmlTag.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+</Solution>

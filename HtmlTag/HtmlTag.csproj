@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>DotNetXtensions.Html</RootNamespace>
+
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionSuffix>beta-1.0.0</VersionSuffix>
+
+    <Authors>Nicholas Petersen</Authors>
+    <RepositoryUrl>https://github.com/copernicus365/HtmlTag</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/copernicus365/HtmlTag</PackageProjectUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags></PackageTags>
+    <PackageTags>html;html-parsing;dotnet;</PackageTags>
+    <PackageReleaseNotes />
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <Description>A high-performance, single-pass, zero-allocation HTML opening tag parser for .NET 8+</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" PackagePath="\" Pack="True" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- for now adding for simplicity during iterations ... easily can add single file to proj as internal later -->
+    <PackageReference Include="DotNetXtensions.Mini" Version="1.0.0-alpha-1.0" />
+  </ItemGroup>
+
+</Project>
