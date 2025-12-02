@@ -169,6 +169,18 @@ public class TechnicalTests
 	}
 
 
+
+	[Fact]
+	public void EndsWithQuoteBeforeClose()
+	{
+		string tag = """  <iframe src="https://cool.com/abc"></iframe>""";
+		HtmlTag htag = new();
+		bool pass = htag.Parse(tag, 2); //, findTagEnd: false);
+		True(pass);
+		Equal("iframe", htag.TagName);
+		Equal("https://cool.com/abc", htag.Attributes.GetValueOrDefault("src"));
+	}
+
 	bool RunTest(HtmlTag t, string tagName, bool? isSelfClose, params (string key, string val)[] args)
 	{
 		if(t.TagName != tagName)
