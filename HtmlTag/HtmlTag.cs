@@ -36,12 +36,12 @@ public class HtmlTag
 	private int _endPosition;
 
 	/// <summary>
-	/// Effective search length. After initialization, this represents the length from
-	/// the start of the tag to one position BEFORE the closing '&gt;' character.
-	/// The closing '&gt;' is intentionally excluded to simplify parsing operations.
-	/// This is an internal optimization value, not meant for external consumption.
+	/// Exclusive upper bound for all parsing loops — always points one position PAST
+	/// the last valid character to parse. Initialized to <c>htmlSpan.Length</c>, then
+	/// narrowed to <c>_endPosition + 1</c>, intentionally excluding the closing
+	/// <c>&gt;</c> (and <c>/</c> for self-closing tags) to simplify all parsing operations.
 	/// </summary>
-	private int _searchLength;
+	private int _searchEnd;
 
 
 	// === PUBLIC PROPERTIES ===
@@ -126,9 +126,7 @@ public class HtmlTag
 	/// </remarks>
 	public bool Parse(string inputHtml, int startIndex = 0, bool findTagEnd = true)
 	{
-		if(inputHtml == null) throw new ArgumentNullException(nameof(inputHtml));
-		if(startIndex < 0) throw new ArgumentOutOfRangeException(nameof(startIndex));
-
+		ArgumentNullException.ThrowIfNull(inputHtml);
 		return Parse(inputHtml.AsSpan(), startIndex, findTagEnd);
 	}
 
@@ -158,8 +156,6 @@ public class HtmlTag
 	/// </remarks>
 	public bool Parse(ReadOnlySpan<char> htmlSpan, int startIndex = 0, bool findTagEnd = true)
 	{
-		if(startIndex < 0) throw new ArgumentOutOfRangeException(nameof(startIndex));
-
 		if(!Initialize(startIndex, findTagEnd, htmlSpan))
 			return false;
 
@@ -194,9 +190,9 @@ public class HtmlTag
 	/// <param name="htmlSpan">Span view of the HTML for character access.</param>
 	private bool Initialize(int startIndex, bool findTagEnd, ReadOnlySpan<char> htmlSpan)
 	{
-		if(startIndex < 0) throw new ArgumentOutOfRangeException(nameof(startIndex));
+		ArgumentOutOfRangeException.ThrowIfNegative(startIndex);
 
-		_searchLength = htmlSpan.Length;
+		_searchEnd = htmlSpan.Length;
 		StartIndex = _currPos = startIndex;
 
 		// Reset state for reuse
@@ -204,10 +200,10 @@ public class HtmlTag
 		Attributes?.Clear();
 
 		// Minimum valid tag: "<p>" (3 chars)
-		if((_searchLength - _currPos) < 3)
+		if((_searchEnd - _currPos) < 3)
 			return false;
 
-		if(_currPos >= _searchLength)
+		if(_currPos >= _searchEnd)
 			throw new ArgumentOutOfRangeException(nameof(startIndex));
 
 		// Must start with '<'
@@ -217,7 +213,7 @@ public class HtmlTag
 		// Find or use the closing '>' position
 		int endIdx = findTagEnd
 			? htmlSpan[StartIndex..].IndexOf('>')
-			: _searchLength - 1;
+			: _searchEnd - 1;
 
 		if(endIdx < 0)
 			return false;
@@ -246,7 +242,7 @@ public class HtmlTag
 			endIdx--; // Also exclude the '/' from our search space
 
 		_endPosition = endIdx;
-		_searchLength = _endPosition + 1;
+		_searchEnd = _endPosition + 1;
 
 		// Move past the opening '<' - all subsequent parsing starts from the tag name
 		_currPos++;
@@ -269,7 +265,7 @@ public class HtmlTag
 	private bool TryParseNameAtCurr(ReadOnlySpan<char> htmlSpan)
 	{
 		// Minimum: "<p" (end '>' already excluded from search length)
-		if(_searchLength < 2)
+		if(_searchEnd < 2)
 			return false;
 
 		int nameLength = CountToNextWhitespaceOrEnd(htmlSpan);
@@ -340,7 +336,7 @@ public class HtmlTag
 		int attrStartPos = _currPos;
 
 		// Scan through the attribute name
-		for(; _currPos < _searchLength; _currPos++) {
+		for(; _currPos < _searchEnd; _currPos++) {
 
 			char c = htmlSpan[_currPos];
 
@@ -512,7 +508,7 @@ public class HtmlTag
 	/// <param name="quoteChar">
 	/// Output parameter that receives the quote character (<c>"</c>, <c>'</c>), or <c>' '</c> for unquoted values.
 	/// </param>
-	/// <param name="htmlSpan"></param>
+	/// <param name="htmlSpan">The HTML span being parsed.</param>
 	/// <returns>True if this is a boolean attribute; false if it has a value.</returns>
 	private bool ProcessEqualsSignAndDetermineIfBoolean(ref char quoteChar, ReadOnlySpan<char> htmlSpan)
 	{
@@ -583,7 +579,7 @@ public class HtmlTag
 	{
 		int i = _currPos;
 
-		for(; i < _searchLength; i++) {
+		for(; i < _searchEnd; i++) {
 			if(XmlConvert.IsWhitespaceChar(span[i]))
 				break;
 		}
@@ -606,7 +602,7 @@ public class HtmlTag
 	{
 		int i = _currPos;
 
-		for(; i < _searchLength; i++) {
+		for(; i < _searchEnd; i++) {
 			if(span[i] == targetChar)
 				return i - _currPos;
 		}
@@ -624,7 +620,7 @@ public class HtmlTag
 	{
 		int whitespaceCount = 0;
 
-		for(; _currPos < _searchLength; _currPos++, whitespaceCount++) {
+		for(; _currPos < _searchEnd; _currPos++, whitespaceCount++) {
 			if(!XmlConvert.IsWhitespaceChar(span[_currPos]))
 				break;
 		}
