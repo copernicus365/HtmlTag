@@ -1,8 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Xml;
 
-using DotNetXtensions.Mini;
-
 namespace DotNetXtensions.Html;
 
 /// <summary>
@@ -38,7 +36,7 @@ public class HtmlTag
 	private int _endPosition;
 
 	/// <summary>
-	/// Effective search length. After initialization, this represents the length from 
+	/// Effective search length. After initialization, this represents the length from
 	/// the start of the tag to one position BEFORE the closing '&gt;' character.
 	/// The closing '&gt;' is intentionally excluded to simplify parsing operations.
 	/// This is an internal optimization value, not meant for external consumption.
@@ -52,7 +50,7 @@ public class HtmlTag
 	/// Gets the name of the HTML tag (e.g., "div", "img", "p").
 	/// Tag names are validated to conform to XML naming conventions.
 	/// </summary>
-	public string TagName { get; set; }
+	public string Name { get; private set; }
 
 	/// <summary>
 	/// Gets the dictionary of attribute name-value pairs.
@@ -60,18 +58,18 @@ public class HtmlTag
 	/// Boolean attributes (without values) are stored with empty string values.
 	/// If duplicate attributes exist, the last one wins.
 	/// </summary>
-	public Dictionary<string, string> Attributes { get; set; }
+	public Dictionary<string, string> Attributes { get; private set; }
 
 	/// <summary>
 	/// Gets the zero-based index in the input string where the tag starts (at the <c><![CDATA[<]]></c> character).
 	/// </summary>
-	public int TagStartIndex { get; private set; }
+	public int StartIndex { get; private set; }
 
 	/// <summary>
 	/// Gets the total length of the complete tag, including the opening <c><![CDATA[<]]></c> and closing <c><![CDATA[>]]></c> characters.
 	/// For self-closed tags, this includes the <c>/</c> character.
 	/// </summary>
-	public int TagLength { get; private set; }
+	public int Length { get; private set; }
 
 	/// <summary>
 	/// Gets whether this tag is self-closed (ends with <c><![CDATA[/>]]></c>).
@@ -80,16 +78,16 @@ public class HtmlTag
 	public bool IsSelfClosed { get; private set; }
 
 	/// <summary>
-	/// Gets the zero-based index where the tag's inner content starts 
+	/// Gets the zero-based index where the tag's inner content starts
 	/// (one character after the opening <c><![CDATA[<]]></c>).
 	/// </summary>
-	public int InnerTagStartIndex => TagStartIndex + 1;
+	public int InnerStartIndex => StartIndex + 1;
 
 	/// <summary>
-	/// Gets the length of the tag's inner content, excluding the opening <c><![CDATA[<]]></c> 
+	/// Gets the length of the tag's inner content, excluding the opening <c><![CDATA[<]]></c>
 	/// and closing <c><![CDATA[>]]></c> (and optional <c>/</c> for self-closed tags).
 	/// </summary>
-	public int InnerTagLength { get; private set; }
+	public int InnerLength { get; private set; }
 
 
 	// === COMPUTED PROPERTIES ===
@@ -97,7 +95,7 @@ public class HtmlTag
 	/// <summary>
 	/// Gets whether this tag has no attributes. Equivalent to checking if Attributes is null or empty.
 	/// </summary>
-	public bool NoAtts => Attributes.IsNulle();
+	public bool NoAttributes => Attributes == null || Attributes.Count == 0;
 
 	/// <summary>
 	/// Indicates whether parsing has reached the end of the searchable tag content.
@@ -164,7 +162,7 @@ public class HtmlTag
 		if(!Initialize(startIndex, findTagEnd, htmlSpan))
 			return false;
 
-		if(!TryParseTagNameAtCurr(htmlSpan))
+		if(!TryParseNameAtCurr(htmlSpan))
 			return false;
 
 		if(EndReached)
@@ -198,10 +196,10 @@ public class HtmlTag
 		if(startIndex < 0) throw new ArgumentOutOfRangeException(nameof(startIndex));
 
 		_searchLength = htmlSpan.Length;
-		TagStartIndex = _currPos = startIndex;
+		StartIndex = _currPos = startIndex;
 
 		// Reset state for reuse
-		TagName = null;
+		Name = null;
 		Attributes?.Clear();
 
 		// Minimum valid tag: "<p>" (3 chars)
@@ -217,24 +215,24 @@ public class HtmlTag
 
 		// Find or use the closing '>' position
 		int endIdx = findTagEnd
-			? htmlSpan.Slice(TagStartIndex).IndexOf('>')
+			? htmlSpan[StartIndex..].IndexOf('>')
 			: _searchLength - 1;
 
 		if(endIdx < 0)
 			return false;
 
-		// IndexOf returns position relative to slice start, so add TagStartIndex back
+		// IndexOf returns position relative to slice start, so add StartIndex back
 		if(findTagEnd)
-			endIdx += TagStartIndex;
+			endIdx += StartIndex;
 
 		// Calculate total tag length (including '<' and '>')
 		// +1 because: position 0 to position 2 = 3 characters (0, 1, 2)
-		TagLength = endIdx - TagStartIndex + 1;
+		Length = endIdx - StartIndex + 1;
 
 		// Validate basic structure
 		if(endIdx < 2
-			|| endIdx <= TagStartIndex
-			|| TagLength < 2
+			|| endIdx <= StartIndex
+			|| Length < 2
 			|| htmlSpan[endIdx] != '>')
 			return false;
 
@@ -253,8 +251,8 @@ public class HtmlTag
 		_currPos++;
 
 		// Calculate the length of content between '<' and '>' (excluding both)
-		InnerTagLength = (_endPosition - _currPos) + 1;
-		if(InnerTagLength < 1)
+		InnerLength = (_endPosition - _currPos) + 1;
+		if(InnerLength < 1)
 			return false;
 
 		return true;
@@ -267,7 +265,7 @@ public class HtmlTag
 	/// Parses and validates the tag name from the current position.
 	/// Tag name must conform to XML naming rules.
 	/// </summary>
-	private bool TryParseTagNameAtCurr(ReadOnlySpan<char> htmlSpan)
+	private bool TryParseNameAtCurr(ReadOnlySpan<char> htmlSpan)
 	{
 		// Minimum: "<p" (end '>' already excluded from search length)
 		if(_searchLength < 2)
@@ -281,11 +279,11 @@ public class HtmlTag
 		ReadOnlySpan<char> tagNameSpan = htmlSpan.Slice(_currPos, nameLength);
 
 		// Validate the name before allocating a string
-		if(!ValidateTagName(tagNameSpan))
+		if(!ValidateName(tagNameSpan))
 			return false;
 
 		// Only allocate string after validation
-		TagName = new string(tagNameSpan);
+		Name = new string(tagNameSpan);
 		_currPos += nameLength;
 
 		return true;
@@ -296,14 +294,14 @@ public class HtmlTag
 	/// Optimized with a fast path for common ASCII alphanumeric names.
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private bool ValidateTagName(ReadOnlySpan<char> name)
+	private static bool ValidateName(ReadOnlySpan<char> name)
 	{
 		if(name.Length == 0)
 			return false;
 
 		// Fast path: Most HTML tags are simple ASCII alphanumeric (possibly with dash/underscore)
 		// This avoids the heavier XmlConvert validation for ~99% of real-world tags
-		if(name[0].IsAsciiLetter() &&
+		if(IsAsciiLetter(name[0]) &&
 			IsAsciiAlphaNumeric(name, allowDash: true, allowUnderscore: true)) {
 			return true;
 		}
@@ -324,14 +322,14 @@ public class HtmlTag
 	/// <summary>
 	/// A STAR OF THE SHOW: working in tandem with `TryParseAttrAtIndicatedPos`, which this
 	/// calls in multiple discovered scenarios:
-	/// 
+	///
 	/// Searching from currPos while skiping any leading whitespace, looks for a NEXT attribute.
 	/// Returns true if found (and added), else false if none found. Handles attributes of ANY kind,
 	/// ie whether a `=` was found or not, etc. Returns false if end of tag reached or invalid input
 	/// encountered.
 	/// <para />
 	/// This is the primary attribute discovery method that scans for attribute boundaries.
-	/// </remarks>
+	/// </summary>
 	private bool TryFindAndParseNextAttr(ReadOnlySpan<char> htmlSpan)
 	{
 		SkipWhitespaceOrEnd(htmlSpan);
@@ -347,7 +345,7 @@ public class HtmlTag
 
 			// Fast check: Most attribute name chars are alphanumeric or dash
 			// This is faster than the whitespace check, so test it first
-			if(!c.IsAsciiLetterOrDigit() && c != '-') {
+			if(!IsAsciiLetterOrDigit(c) && c != '-') {
 
 				// Found '=' - this attribute has a value
 				if(c == '=') {
@@ -381,7 +379,7 @@ public class HtmlTag
 
 	/// <summary>
 	/// Another star of the show: working in tandem with it's caller `TryFindAndParseNextAttr` --
-	/// 
+	///
 	/// Tries to fully parse and add an attribute at specified pos, where caller has already
 	/// critically determined: 1. if it's a boolean attribute or not, and 2. has determined
 	/// the name boundaries, while skipping past any whitespace and after the '=' if applicable.
@@ -391,9 +389,6 @@ public class HtmlTag
 	/// <param name="isBooleanAttribute">
 	/// True if this is a boolean/valueless attribute (no <c>=</c> sign found, OR <c>=</c> found
 	/// but no value follows).
-	/// <para />
-	/// [UPDATE: dude, I forget if `=` with no value if we're calling that
-	/// boolean value... code-wise and test wise things are working but would like to verify...]
 	/// </param>
 	/// <param name="htmlSpan">The HTML span being parsed.</param>
 	/// <returns>True if attr (+ possible value) found / added</returns>
@@ -417,14 +412,14 @@ public class HtmlTag
 
 		// Extract and validate attribute name
 		ReadOnlySpan<char> nameSpan = htmlSpan.Slice(nameStartPos, nameLength);
-		string attrName = new string(nameSpan).NullIfEmptyTrimmed();
+		string attrName = TrimToNull(new string(nameSpan));
 
-		if(attrName.IsNulle())
+		if(string.IsNullOrEmpty(attrName))
 			return false;
 
 		// Validate first character of attribute name
 		// (Must be letter or underscore, not digit or dash)
-		if(!attrName[0].IsAsciiLetter() &&
+		if(!IsAsciiLetter(attrName[0]) &&
 			!XmlConvert.IsStartNCNameChar(attrName[0]))
 			return false;
 
@@ -600,6 +595,7 @@ public class HtmlTag
 	/// Does not modify the current position.
 	/// </summary>
 	/// <param name="targetChar">The character to search for.</param>
+	/// <param name="span">The character span to search within.</param>
 	/// <returns>
 	/// The number of characters from current position to the target character (excluding the target),
 	/// or -1 if the character is not found.
@@ -655,7 +651,7 @@ public class HtmlTag
 		for(int i = 0; i < span.Length; i++) {
 			char c = span[i];
 
-			if(!c.IsAsciiLetterOrDigit()) {
+			if(!IsAsciiLetterOrDigit(c)) {
 				if(c == '_' && allowUnderscore)
 					continue;
 				if(c == '-' && allowDash)
@@ -666,5 +662,24 @@ public class HtmlTag
 		}
 
 		return true;
+	}
+
+
+
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static bool IsAsciiLetterOrDigit(char c)
+		=> (c > 96 && c < 123) || (c > 64 && c < 91) || (c < 58 && c > 47);
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	static bool IsAsciiLetter(char c)
+		=> (c > 96 && c < 123) || (c > 64 && c < 91);
+
+	static string TrimToNull(string s)
+	{
+		if(s == null || s.Length == 0) return null;
+		if(char.IsWhiteSpace(s[0]) || char.IsWhiteSpace(s[^1]))
+			s = s.Trim();
+		return s.Length == 0 ? null : s;
 	}
 }
