@@ -426,7 +426,7 @@ public class HtmlTag
 		if(!isBooleanAttribute)
 			isBooleanAttribute = ProcessEqualsSignAndDetermineIfBoolean(ref quoteChar, htmlSpan);
 
-		// Boolean attribute - store with empty string value
+		// Boolean attribute - store with null value
 		if(isBooleanAttribute) {
 			AddAttribute(attrName, null);
 			_currPos++;
