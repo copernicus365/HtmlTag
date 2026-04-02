@@ -6,7 +6,7 @@ A high-performance, single-pass, zero-allocation HTML opening tag parser for .NE
 
 ## Overview
 
-`HtmlTag` is a lightweight, high-performance HTML tag parser optimized for parsing opening HTML tags with minimal memory allocations. It's designed for scenarios where you're already processing HTML and need to quickly extract tag names, attributes, and positional information from opening tags, while avoiding the headache of crazy HTML issues found in the wild. 
+`HtmlTag` is a lightweight, high-performance HTML tag parser optimized for parsing opening HTML tags with minimal memory allocations. It's designed for scenarios where you're already processing HTML and need to quickly extract tag names, attributes, and positional information from opening tags, while avoiding the headache of crazy HTML issues found in the wild.
 
 ### Key Features
 
@@ -46,7 +46,6 @@ Or add to your `.csproj`:
 Following examples assume:
 
 ```csharp
-
 using static System.Console;
 using static Xunit.Assert;
 ```
@@ -61,7 +60,7 @@ var tag = new HtmlTag();
 bool parsed = tag.Parse("<div class='container'>");
 
 True(parsed);
-Equal("div", tag.TagName);
+Equal("div", tag.Name);
 Equal("container", tag.Attributes["class"]);
 ```
 
@@ -72,7 +71,7 @@ var tag = new HtmlTag();
 bool parsed = tag.Parse("<img src='photo.jpg' alt='My Photo' width=800 />");
 
 True(parsed);
-Equal("img", tag.TagName);
+Equal("img", tag.Name);
 True(tag.IsSelfClosed);
 Equal(3, tag.Attributes.Count);
 Equal("photo.jpg", tag.Attributes["src"]);
@@ -91,7 +90,7 @@ var tag = new HtmlTag();
 bool parsed = tag.Parse(html, startIndex: 0);
 
 True(parsed);
-Equal("div", tag.TagName);
+Equal("div", tag.Name);
 Equal("test", tag.Attributes["class"]);
 ```
 
@@ -105,9 +104,9 @@ var tag = new HtmlTag();
 bool parsed = tag.Parse(html, startIndex: 12);
 
 True(parsed);
-Equal("div", tag.TagName);
-Equal(12, tag.TagStartIndex);
-Equal(15, tag.TagLength);
+Equal("div", tag.Name);
+Equal(12, tag.StartIndex);
+Equal(15, tag.Length);
 Equal("main", tag.Attributes["id"]);
 ```
 
@@ -132,14 +131,14 @@ High-performance overload that accepts a `ReadOnlySpan<char>` for zero-allocatio
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `TagName` | `string` | The HTML tag name (e.g., "div", "img") |
+| `Name` | `string` | The HTML tag name (e.g., "div", "img") |
 | `Attributes` | `Dictionary<string, string>` | Attribute name-value pairs (null if no attributes) |
-| `TagStartIndex` | `int` | Zero-based index where tag starts (at `<`) |
-| `TagLength` | `int` | Total length of tag including `<` and `>` |
+| `StartIndex` | `int` | Zero-based index where tag starts (at `<`) |
+| `Length` | `int` | Total length of tag including `<` and `>` |
 | `IsSelfClosed` | `bool` | Whether tag ends with `/>` |
-| `InnerTagStartIndex` | `int` | Index one character after `<` |
-| `InnerTagLength` | `int` | Length excluding `<` and `>` |
-| `NoAtts` | `bool` | Whether tag has no attributes |
+| `InnerStartIndex` | `int` | Index one character after `<` |
+| `InnerLength` | `int` | Length excluding `<` and `>` |
+| `NoAttributes` | `bool` | Whether tag has no attributes |
 
 ## Examples
 
@@ -159,19 +158,19 @@ Null(tag.Attributes["required"]);
 
 ```csharp
 var tag = new HtmlTag();
-string html = @"<img 
-    class='thumb-image' 
-    data-image='https://example.com/photo.png' 
-    data-image-dimensions=1920x1080 
-    data-image-focal-point='0.5,0.5' 
-    alt='My Photo' 
-    src='https://example.com/photo.png?format=1200w' 
+string html = @"<img
+    class='thumb-image'
+    data-image='https://example.com/photo.png'
+    data-image-dimensions=1920x1080
+    data-image-focal-point='0.5,0.5'
+    alt='My Photo'
+    src='https://example.com/photo.png?format=1200w'
     data-load=false />";
 
 bool parsed = tag.Parse(html);
 
 True(parsed);
-Equal("img", tag.TagName);
+Equal("img", tag.Name);
 True(tag.IsSelfClosed);
 Equal(7, tag.Attributes.Count);
 Equal("thumb-image", tag.Attributes["class"]);
@@ -196,8 +195,8 @@ var foundTags = new List<(string name, int position)>();
 while (pos < html.Length) {
     if (html[pos] == '<') {
         if (tag.Parse(html, startIndex: pos)) {
-            foundTags.Add((tag.TagName, tag.TagStartIndex));
-            pos = tag.TagStartIndex + tag.TagLength;
+            foundTags.Add((tag.Name, tag.StartIndex));
+            pos = tag.StartIndex + tag.Length;
             continue;
         }
     }
