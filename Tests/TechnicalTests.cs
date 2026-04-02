@@ -61,6 +61,10 @@ public class TechnicalTests
 		=> RunIt2(name: "img", tag: "<img is-cool= >", args: ("is-cool", null));
 
 	[Fact]
+	public void BoolAttrEmptyQuotesValue()
+		=> RunIt2(name: "img", tag: "<img is-cool=\"\"/>", args: ("is-cool", ""));
+
+	[Fact]
 	public void MultAtts1()
 	{
 		RunIt2(

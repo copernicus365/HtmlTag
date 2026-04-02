@@ -55,7 +55,8 @@ public class HtmlTag
 	/// <summary>
 	/// Gets the dictionary of attribute name-value pairs.
 	/// Returns null if the tag has no attributes.
-	/// Boolean attributes (without values) are stored with empty string values.
+	/// Boolean attributes (no <c>=</c> sign, e.g. <c><![CDATA[<input disabled>]]></c>) are stored with a <c>null</c> value —
+	/// distinguishing them from attributes with an explicitly empty value (e.g. <c>title=""</c>), which are stored as <c>""</c>.
 	/// If duplicate attributes exist, the last one wins.
 	/// </summary>
 	public Dictionary<string, string> Attributes { get; private set; }

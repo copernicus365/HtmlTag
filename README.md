@@ -144,14 +144,20 @@ High-performance overload that accepts a `ReadOnlySpan<char>` for zero-allocatio
 
 ### Boolean Attributes
 
+Boolean attributes (no `=` sign) are stored with a `null` value, distinguishing them from attributes with an explicitly empty value (`=""`), which are stored as `""`.
+
 ```csharp
 var tag = new HtmlTag();
 bool parsed = tag.Parse("<input type=text disabled required>");
 
 True(parsed);
 Equal("text", tag.Attributes["type"]);
-Null(tag.Attributes["disabled"]);
-Null(tag.Attributes["required"]);
+Null(tag.Attributes["disabled"]);   // boolean attribute → null
+Null(tag.Attributes["required"]);   // boolean attribute → null
+
+// Explicitly empty value is distinct from boolean:
+tag.Parse("<input title=''>");
+Equal("", tag.Attributes["title"]); // explicit empty quotes → ""
 ```
 
 ### Complex Real-World Example
