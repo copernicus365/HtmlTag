@@ -158,7 +158,7 @@ public class GeneralTests
 		bool parsed = tag.Parse("<div class='first' class='second'>");
 
 		True(parsed);
-		Equal("second", tag.Attributes["class"]); // Last one wins
+		Equal("first", tag.Attributes["class"]); // First one wins
 	}
 
 	[Fact]

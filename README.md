@@ -253,14 +253,14 @@ Equal("600", tag.Attributes["height"]);
 
 ### Duplicate Attributes
 
-When duplicate attribute names exist, **the last one wins** (matching browser behavior):
+When duplicate attribute names exist, **the first one wins** (matching browser behavior):
 
 ```csharp
 var tag = new HtmlTag();
 bool parsed = tag.Parse("<div class='first' class='second'>");
 
 True(parsed);
-Equal("second", tag.Attributes["class"]); // Last one wins
+Equal("first", tag.Attributes["class"]); // First one wins
 ```
 
 ### Empty Attribute Values

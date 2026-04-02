@@ -170,8 +170,7 @@ public class TechnicalTests
 			True(t.IsSelfClosed == isSelfClose);
 
 		if(!t.NoAttributes) {
-			// as for duplicates, the input kvs must CHOOSE which duplicated key wins,
-			// only send in that one
+			// as for duplicates, the first occurrence wins — only send in the first one
 			var d = args.ToDictionary(kv => kv.key, kv => kv.val);
 
 			foreach(var kv in d) {

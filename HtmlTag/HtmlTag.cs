@@ -57,7 +57,7 @@ public class HtmlTag
 	/// Returns null if the tag has no attributes.
 	/// Boolean attributes (no <c>=</c> sign, e.g. <c><![CDATA[<input disabled>]]></c>) are stored with a <c>null</c> value —
 	/// distinguishing them from attributes with an explicitly empty value (e.g. <c>title=""</c>), which are stored as <c>""</c>.
-	/// If duplicate attributes exist, the last one wins.
+	/// If duplicate attributes exist, the first one wins (matching browser behavior).
 	/// </summary>
 	public Dictionary<string, string> Attributes { get; private set; }
 
@@ -553,16 +553,13 @@ public class HtmlTag
 	/// Adds an attribute to the Attributes dictionary.
 	/// Initializes the dictionary if this is the first attribute. (PERF! doesn't
 	/// alloc dict if no attributes!) If a duplicate attribute name exists,
-	/// the new value OVERWRITES the old one!
-	/// <para />
-	/// Note this claim: "Modern browsers universally treat the last occurrence of a duplicate
-	/// attribute as the winner." So we must do too. LAST ONE IN WINS.
+	/// the first occurrence wins — matching browser behavior.
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void AddAttribute(string name, string value)
 	{
 		Attributes ??= new Dictionary<string, string>(capacity: 4);
-		Attributes[name] = value; // OVERWRITES any earlier duplicate!
+		Attributes.TryAdd(name, value); // first occurrence wins
 	}
 
 
