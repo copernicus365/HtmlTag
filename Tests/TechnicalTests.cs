@@ -1,7 +1,3 @@
-global using static System.Console;
-global using static Xunit.Assert;
-
-using System.Text;
 
 namespace Tests;
 
@@ -12,7 +8,7 @@ namespace Tests;
 public class TechnicalTests
 {
 	[Fact]
-	public void BadTag_SpaceBeforeTagName_FAIL()
+	public void BadTag_SpaceBeforeName_FAIL()
 		=> RunIt2(name: "img", tag: "                <img>         ", selfClose: false, startPos: 16);
 
 	[Fact]
@@ -30,7 +26,7 @@ public class TechnicalTests
 		var tag = new HtmlTag();
 		True(tag.Parse("<input foo =  bar=>"));
 
-		Equal("input", tag.TagName);
+		Equal("input", tag.Name);
 		Equal(2, tag.Attributes.Count);
 		Null(tag.Attributes.GetValueOrDefault("foo"));
 		Null(tag.Attributes.GetValueOrDefault("bar"));
@@ -111,38 +107,14 @@ public class TechnicalTests
 			//success: false,
 			startPos: dummyHtmlContent.Length - 0,
 			validate: ht => {
-				if(ht.TagStartIndex != dummyHtmlContent.Length)
+				if(ht.StartIndex != dummyHtmlContent.Length)
 					return false;
-				string fullTag = tagStrFull.Substring(ht.TagStartIndex, ht.TagLength);
+				string fullTag = tagStrFull.Substring(ht.StartIndex, ht.Length);
 				if(fullTag != tagStr)
 					return false;
 				return true;
 			},
 			args: gargs(("is-cool", null), ("hello", "yes")));
-	}
-
-	[Fact]
-	void BlahTest1()
-	{
-		string name = "href";
-		ReadOnlyMemory<char> nameMem = name.AsMemory(0, 4);
-
-
-		StringBuilder sb = new();
-
-		sb.Append(nameMem);
-
-		Dictionary<ReadOnlyMemory<char>, ReadOnlyMemory<char>> dict = new() {
-			{ "href".AsMemory(), "battabing.com1".AsMemory() },
-		};
-
-		bool hasKey = dict.ContainsKey(nameMem);
-
-		if(dict.TryGetValue("href".AsMemory(), out ReadOnlyMemory<char> val1))
-			WriteLine(val1.Span.ToString());
-
-		if(dict.TryGetValue("bref".AsMemory(), out ReadOnlyMemory<char> val2))
-			WriteLine(val1.Span.ToString());
 	}
 
 	[Fact]
@@ -177,23 +149,24 @@ public class TechnicalTests
 		HtmlTag htag = new();
 		bool pass = htag.Parse(tag, 2); //, findTagEnd: false);
 		True(pass);
-		Equal("iframe", htag.TagName);
+		Equal("iframe", htag.Name);
 		Equal("https://cool.com/abc", htag.Attributes.GetValueOrDefault("src"));
 	}
 
 	bool RunTest(HtmlTag t, string tagName, bool? isSelfClose, params (string key, string val)[] args)
 	{
-		if(t.TagName != tagName)
+		if(t.Name != tagName)
 			return false;
 
-		if(t.Attributes.CountN() != args.CountN())
+
+		if(t.Attributes.CountN != args.CountN)
 			True(false);
 
 		if(isSelfClose != null)
 			True(t.IsSelfClosed == isSelfClose);
 
-		if(!t.NoAtts) {
-			// as for duplicates, the input kvs must CHOOSE which duplicated key wins, 
+		if(!t.NoAttributes) {
+			// as for duplicates, the input kvs must CHOOSE which duplicated key wins,
 			// only send in that one
 			var d = args.ToDictionary(kv => kv.key, kv => kv.val);
 
@@ -225,7 +198,7 @@ public class TechnicalTests
 	{
 		HtmlTag hTag = new HtmlTag();
 
-		bool findTagEnd = tag.IsTrimmable() || tag.Last() != '>';
+		bool findTagEnd = tag.IsTrimmable || tag.Last() != '>';
 
 		bool passedParse = hTag.Parse(tag, startPos, findTagEnd);
 		bool testPass1 = passedParse == success;
@@ -245,4 +218,64 @@ public class TechnicalTests
 	}
 
 	static (string key, string val)[] gargs(params (string key, string val)[] args) => args;
+
+
+	[Fact]
+	public void NoAttributes_TrueWhenNoAttrs()
+	{
+		HtmlTag tag = new();
+		True(tag.Parse("<p>"));
+		True(tag.NoAttributes);
+		Null(tag.Attributes);
+	}
+
+	[Fact]
+	public void NoAttributes_FalseWhenHasAttrs()
+	{
+		HtmlTag tag = new();
+		True(tag.Parse("<div class='x'>"));
+		False(tag.NoAttributes);
+	}
+
+	[Fact]
+	public void InnerStartIndex_And_InnerLength()
+	{
+		HtmlTag tag = new();
+		True(tag.Parse("<div class='x'>"));
+		Equal(1, tag.InnerStartIndex);
+		Equal(13, tag.InnerLength); // "div class='x'" = 13 chars
+	}
+
+	[Fact]
+	public void InnerStartIndex_And_InnerLength_SelfClose()
+	{
+		HtmlTag tag = new();
+		True(tag.Parse("<br/>"));
+		Equal(1, tag.InnerStartIndex);
+		Equal(2, tag.InnerLength); // "br" = 2 chars
+	}
+
+	[Fact]
+	public void FindTagEnd_False()
+	{
+		HtmlTag tag = new();
+		True(tag.Parse("<div class='x'>", findTagEnd: false));
+		Equal("div", tag.Name);
+		Equal("x", tag.Attributes["class"]);
+	}
+
+	[Fact]
+	public void Reuse_StateIsReset()
+	{
+		HtmlTag tag = new();
+
+		True(tag.Parse("<div id='a'>"));
+		Equal("div", tag.Name);
+		Equal("a", tag.Attributes["id"]);
+
+		True(tag.Parse("<span class='b'>"));
+		Equal("span", tag.Name);
+		Equal("b", tag.Attributes["class"]);
+		False(tag.Attributes.ContainsKey("id")); // prior state cleared
+	}
 }

@@ -10,7 +10,7 @@ public class GeneralTests
 		bool parsed = tag.Parse("<div class='container'>");
 
 		True(parsed);
-		Equal("div", tag.TagName);
+		Equal("div", tag.Name);
 		Equal("container", tag.Attributes["class"]);
 	}
 
@@ -21,7 +21,7 @@ public class GeneralTests
 		bool parsed = tag.Parse("<img src='photo.jpg' alt='My Photo' width=800 />");
 
 		True(parsed);
-		Equal("img", tag.TagName);
+		Equal("img", tag.Name);
 		True(tag.IsSelfClosed);
 		Equal(3, tag.Attributes.Count);
 		Equal("photo.jpg", tag.Attributes["src"]);
@@ -38,7 +38,7 @@ public class GeneralTests
 		bool parsed = tag.Parse(html, startIndex: 0);
 
 		True(parsed);
-		Equal("div", tag.TagName);
+		Equal("div", tag.Name);
 		Equal("test", tag.Attributes["class"]);
 	}
 
@@ -52,9 +52,9 @@ public class GeneralTests
 		bool parsed = tag.Parse(html, startIndex: 12);
 
 		True(parsed);
-		Equal("div", tag.TagName);
-		Equal(12, tag.TagStartIndex);
-		Equal(15, tag.TagLength);
+		Equal("div", tag.Name);
+		Equal(12, tag.StartIndex);
+		Equal(15, tag.Length);
 		Equal("main", tag.Attributes["id"]);
 	}
 
@@ -86,7 +86,7 @@ public class GeneralTests
 		bool parsed = tag.Parse(html);
 
 		True(parsed);
-		Equal("img", tag.TagName);
+		Equal("img", tag.Name);
 		True(tag.IsSelfClosed);
 		Equal(7, tag.Attributes.Count);
 		Equal("thumb-image", tag.Attributes["class"]);
@@ -114,8 +114,8 @@ public class GeneralTests
 		while(pos < html.Length) {
 			if(html[pos] == '<') {
 				if(tag.Parse(html, startIndex: pos)) {
-					foundTags.Add((tag.TagName, tag.TagStartIndex));
-					pos = tag.TagStartIndex + tag.TagLength;
+					foundTags.Add((tag.Name, tag.StartIndex));
+					pos = tag.StartIndex + tag.Length;
 					continue;
 				}
 			}
